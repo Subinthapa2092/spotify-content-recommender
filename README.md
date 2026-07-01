@@ -8,6 +8,18 @@ Since the dataset contains **no user interactions or ratings**, collaborative fi
 
 ---
 
+## 🚀 Live Demo
+
+The application is deployed and available online:
+
+🔗 **Live Application:**  
+https://spotify-content-recommender.onrender.com/
+
+📚 **API Documentation:**  
+https://spotify-content-recommender.onrender.com/docs
+
+---
+
 ## ✨ Features
 
 - Content-based recommendation engine
@@ -15,10 +27,12 @@ Since the dataset contains **no user interactions or ratings**, collaborative fi
 - Maximal Marginal Relevance (MMR) for diverse recommendations
 - FastAPI REST API
 - Interactive frontend for searching songs
+- Pre-trained ML model loading
 - Model persistence
 - Evaluation metrics for recommender systems
 - Unit tests with pytest
 - Docker support
+- Production deployment using Render
 
 ---
 
@@ -79,7 +93,7 @@ Final Recommendations
 # Project Structure
 
 ```
-song-recommendation-system/
+spotify-content-recommender/
 │
 ├── app/
 │   ├── main.py
@@ -124,15 +138,15 @@ song-recommendation-system/
 
 # Installation
 
-Clone the repository
+Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/song-recommendation-system.git
+git clone https://github.com/Subinthapa2092/spotify-content-recommender.git
 
-cd song-recommendation-system
+cd spotify-content-recommender
 ```
 
-Install dependencies
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
@@ -142,13 +156,13 @@ pip install -r requirements.txt
 
 # Build the Recommendation Model
 
-Run the ML pipeline to preprocess the dataset, engineer features, evaluate the recommender, and save all required artifacts.
+Run the ML pipeline to preprocess the dataset, engineer features, evaluate the recommender, and save required artifacts.
 
 ```bash
 python main.py
 ```
 
-Generated artifacts are stored in:
+Generated artifacts:
 
 ```
 models/
@@ -160,19 +174,19 @@ songs_lookup.pkl
 model_metadata.json
 ```
 
-Run this step again only if the dataset or feature engineering changes.
+Run this again only if dataset or feature engineering changes.
 
 ---
 
 # Start the API
 
-Launch the FastAPI backend.
+Launch FastAPI backend:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-API Documentation
+API Documentation:
 
 ```
 http://localhost:8000/docs
@@ -183,13 +197,13 @@ http://localhost:8000/docs
 # API Endpoints
 
 | Method | Endpoint | Description |
-|---------|----------|-------------|
+|---|---|---|
 | GET | `/health` | Model status and evaluation metrics |
 | GET | `/search?q=love&limit=20` | Search songs by title or artist |
 | GET | `/recommend/{track_id}?n=10&method=mmr` | Get recommendations |
 | GET | `/genres` | List available genres |
 
-Recommendation methods
+### Recommendation Methods
 
 - **baseline** → cosine similarity only
 - **mmr** → cosine similarity + diversity re-ranking (default)
@@ -200,39 +214,43 @@ Recommendation methods
 
 The project includes a lightweight HTML frontend.
 
-Open
+Run locally:
 
 ```
 frontend/index.html
 ```
 
-in your browser.
+The production API:
 
-By default it connects to
+```
+https://spotify-content-recommender.onrender.com
+```
+
+Local development API:
 
 ```
 http://localhost:8000
 ```
 
-If needed, update the `API_BASE` variable inside the JavaScript section.
+The frontend communicates with the FastAPI backend through API requests.
 
 ---
 
 # Running Tests
 
-Install development dependencies
+Install development dependencies:
 
 ```bash
 pip install -r requirements-dev.txt
 ```
 
-Run all tests
+Run tests:
 
 ```bash
 pytest
 ```
 
-The test suite includes **24 unit tests** covering:
+Test coverage includes:
 
 - Data preprocessing
 - Feature engineering
@@ -240,25 +258,23 @@ The test suite includes **24 unit tests** covering:
 - Baseline recommender
 - MMR recommender
 
-Tests run against a **3,000-song sample of the real dataset**, providing realistic validation while maintaining fast execution.
-
 ---
 
 # Docker
 
-Generate the model artifacts first.
+Build model artifacts first:
 
 ```bash
 python main.py
 ```
 
-Build the Docker image
+Build Docker image:
 
 ```bash
 docker build -t song-rec .
 ```
 
-Run the container
+Run container:
 
 ```bash
 docker run -p 8000:8000 song-rec
@@ -266,17 +282,33 @@ docker run -p 8000:8000 song-rec
 
 ---
 
+# Deployment
+
+The application is deployed using:
+
+- Render Web Service
+- FastAPI
+- Uvicorn
+
+Production URL:
+
+```
+https://spotify-content-recommender.onrender.com/
+```
+
+---
+
 # Evaluation
 
-Traditional train/test evaluation is **not applicable** because no user preference labels exist.
+Traditional train/test evaluation is not applicable because no user preference labels exist.
 
-Instead, the recommender is evaluated using standard proxy metrics for content-based recommendation systems:
+The recommender is evaluated using proxy metrics:
 
 - Genre Precision
 - Recommendation Diversity
 - Catalog Coverage
 
-The evaluation summary is stored in
+Evaluation results are stored in:
 
 ```
 models/model_metadata.json
@@ -296,12 +328,13 @@ models/model_metadata.json
 - HTML
 - JavaScript
 - Docker
+- Render
 
 ---
 
 # Why Content-Based Filtering?
 
-Collaborative filtering requires historical user interactions such as:
+Collaborative filtering requires user interaction data such as:
 
 - User ratings
 - Listening history
@@ -315,7 +348,7 @@ The Spotify Tracks Dataset contains only **track-level metadata and audio featur
 # Future Improvements
 
 - Hybrid recommendation system
-- Approximate nearest-neighbor search (FAISS)
+- Approximate nearest-neighbor search using FAISS
 - Spotify API integration
 - User profiles and personalized recommendations
 - Playlist generation
@@ -334,8 +367,8 @@ This project is intended for educational and portfolio purposes.
 
 **Subin Thapa**
 
-Profile : 
+GitHub:  
+https://github.com/Subinthapa2092
 
-GitHub: https://github.com/subinthapa2092
-
-LinkedIn: https://linkedin.com/in/subinthapa
+LinkedIn:  
+https://linkedin.com/in/subinthapa
