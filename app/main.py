@@ -10,8 +10,11 @@ Endpoints:
     GET /recommend/{track_id}?n=10&method=mmr  - get recommendations
     GET /genres                          - list all genres in the catalog
 """
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.state import state
 from app.router import router
@@ -22,7 +25,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Allow the frontend (served separately) to call this API during development.
+# Allow the frontend to call this API even if it's ever hosted from a
+# different origin (e.g. testing frontend/index.html directly from disk).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,4 +40,10 @@ def startup():
     state.load()
 
 
-app.include_router(router)
+app.include_router(router, prefix="/api")
+
+# Serve the frontend from the SAME service, so one deploy = frontend + API
+# together, no separate hosting/CORS setup needed in production.
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
+if os.path.isdir(FRONTEND_DIR):
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

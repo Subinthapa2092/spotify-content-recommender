@@ -3,9 +3,9 @@ from fastapi import APIRouter, HTTPException, Query
 from app.state import state
 from app.schemas import (
     SearchResponse, SongOut, RecommendResponse, RecommendationOut,
-    GenresResponse, HealthResponse,
+    GenresResponse, HealthResponse, MoodsResponse, SongListResponse,
 )
-from src.recommender import RECOMMENDERS, search_songs
+from src.recommender import RECOMMENDERS, search_songs, popular_songs, songs_by_genre, songs_by_mood, MOOD_RULES
 
 router = APIRouter()
 
@@ -72,3 +72,37 @@ def recommend(track_id: str, n: int = Query(10, ge=1, le=50),
 @router.get("/genres", response_model=GenresResponse)
 def genres():
     return GenresResponse(genres=sorted(state.df_clean["track_genre"].unique().tolist()))
+
+
+@router.get("/moods", response_model=MoodsResponse)
+def moods():
+    return MoodsResponse(moods=sorted(MOOD_RULES.keys()))
+
+
+def _to_song_out(row) -> SongOut:
+    return SongOut(
+        track_id=row["track_id"], track_name=row["track_name"], artists=row["artists"],
+        album_name=row["album_name"], track_genre=row["track_genre"], popularity=int(row["popularity"]),
+    )
+
+
+@router.get("/popular", response_model=SongListResponse)
+def popular(limit: int = Query(20, ge=1, le=50)):
+    rows = popular_songs(state.df_clean, limit=limit)
+    return SongListResponse(label="Popular right now", results=[_to_song_out(r) for _, r in rows.iterrows()])
+
+
+@router.get("/genre/{genre}", response_model=SongListResponse)
+def by_genre(genre: str, limit: int = Query(20, ge=1, le=50)):
+    rows = songs_by_genre(state.df_clean, genre, limit=limit)
+    if rows.empty:
+        raise HTTPException(status_code=404, detail=f"genre '{genre}' not found")
+    return SongListResponse(label=genre.title(), results=[_to_song_out(r) for _, r in rows.iterrows()])
+
+
+@router.get("/mood/{mood}", response_model=SongListResponse)
+def by_mood(mood: str, limit: int = Query(20, ge=1, le=50)):
+    if mood.lower() not in MOOD_RULES:
+        raise HTTPException(status_code=404, detail=f"mood '{mood}' not recognized")
+    rows = songs_by_mood(state.df_clean, mood, limit=limit)
+    return SongListResponse(label=mood.title(), results=[_to_song_out(r) for _, r in rows.iterrows()])

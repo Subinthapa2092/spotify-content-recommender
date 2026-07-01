@@ -36,6 +36,15 @@ class GenresResponse(BaseModel):
     genres: List[str]
 
 
+class MoodsResponse(BaseModel):
+    moods: List[str]
+
+
+class SongListResponse(BaseModel):
+    label: str
+    results: List[SongOut]
+
+
 class HealthResponse(BaseModel):
     status: str
     n_songs: Optional[int] = None

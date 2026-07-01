@@ -93,3 +93,36 @@ def search_songs(df: pd.DataFrame, q: str, limit: int = 20) -> pd.DataFrame:
         | df["artists"].str.lower().str.contains(q_lower, na=False)
     )
     return df[mask].head(limit)
+
+
+LIST_COLS = ["track_id", "track_name", "artists", "album_name", "track_genre", "popularity"]
+
+# valence = musical positivity (sad -> happy), energy = intensity/activity.
+# Both are native columns in the dataset, so moods are computed from real
+# audio features, not hardcoded.
+MOOD_RULES = {
+    "happy":     lambda df: (df["valence"] >= 0.6) & (df["energy"] >= 0.5),
+    "chill":     lambda df: (df["valence"] >= 0.4) & (df["energy"] <= 0.4),
+    "sad":       lambda df: (df["valence"] <= 0.35) & (df["energy"] <= 0.5),
+    "energetic": lambda df: (df["energy"] >= 0.75),
+    "romantic":  lambda df: (df["valence"] >= 0.35) & (df["valence"] <= 0.7) & (df["acousticness"] >= 0.3),
+    "focus":     lambda df: (df["instrumentalness"] >= 0.3) & (df["energy"] <= 0.5),
+}
+
+
+def popular_songs(df: pd.DataFrame, limit: int = 20) -> pd.DataFrame:
+    """Most popular tracks in the catalog (real popularity column, not a model output)."""
+    return df.sort_values("popularity", ascending=False).drop_duplicates("track_name").head(limit)[LIST_COLS]
+
+
+def songs_by_genre(df: pd.DataFrame, genre: str, limit: int = 20) -> pd.DataFrame:
+    matches = df[df["track_genre"].str.lower() == genre.lower()]
+    return matches.sort_values("popularity", ascending=False).head(limit)[LIST_COLS]
+
+
+def songs_by_mood(df: pd.DataFrame, mood: str, limit: int = 20) -> pd.DataFrame:
+    mood = mood.lower()
+    if mood not in MOOD_RULES:
+        return df.iloc[0:0][LIST_COLS]
+    matches = df[MOOD_RULES[mood](df)]
+    return matches.sort_values("popularity", ascending=False).head(limit)[LIST_COLS]

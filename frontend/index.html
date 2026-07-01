@@ -3,363 +3,591 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Similar &mdash; song recommender</title>
+<title>Wavelength — song recommender</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#121218;
-    --bg-raised:#1b1b24;
-    --bg-hover:#232330;
-    --line:#2c2c38;
-    --text:#eeeef2;
-    --text-dim:#9797a6;
-    --text-faint:#5c5c6b;
-    --accent:#ffb020;
-    --accent-dim:#4a3a1c;
+    --bg: #0c0d10;
+    --surface: #15171c;
+    --surface-2: #1c1f26;
+    --line: #262a33;
+    --text: #f2f1ec;
+    --muted: #8d93a1;
+    --accent-1: #ffb454;
+    --accent-2: #ff6b57;
+    --accent-grad: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    --radius: 12px;
   }
-  *{box-sizing:border-box;}
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
   body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:'Inter',sans-serif;
-    min-height:100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  .wrap{
-    max-width:760px;
-    margin:0 auto;
-    padding:64px 24px 80px;
-  }
-  header{
-    margin-bottom:40px;
-  }
-  .eyebrow{
-    font-family:'JetBrains Mono',monospace;
-    font-size:12px;
-    letter-spacing:0.12em;
-    text-transform:uppercase;
-    color:var(--accent);
-    margin-bottom:10px;
-  }
-  h1{
-    font-family:'Space Grotesk',sans-serif;
-    font-size:40px;
-    font-weight:700;
-    line-height:1.1;
-    margin:0 0 12px;
-    letter-spacing:-0.01em;
-  }
-  .sub{
-    color:var(--text-dim);
-    font-size:15px;
-    max-width:46ch;
-    line-height:1.5;
-  }
-  .search-row{
-    display:flex;
-    gap:10px;
-    margin:36px 0 8px;
-  }
-  input[type=text]{
-    flex:1;
-    background:var(--bg-raised);
-    border:1px solid var(--line);
-    color:var(--text);
-    font-family:'Inter',sans-serif;
-    font-size:15px;
-    padding:14px 16px;
-    border-radius:10px;
-    outline:none;
-    transition:border-color .15s;
-  }
-  input[type=text]:focus{border-color:var(--accent);}
-  button{
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:600;
-    font-size:14px;
-    background:var(--accent);
-    color:#1a1400;
-    border:none;
-    padding:0 22px;
-    border-radius:10px;
-    cursor:pointer;
-    transition:filter .15s;
-  }
-  button:hover{filter:brightness(1.08);}
-  button:disabled{background:var(--line);color:var(--text-faint);cursor:default;}
+  h1,h2,h3, .brand, .track-name, .modal h2{ font-family:'Space Grotesk', sans-serif; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; cursor:pointer; border:none; }
+  ::selection{ background: var(--accent-2); color:#0c0d10; }
 
-  .status{
-    font-family:'JetBrains Mono',monospace;
-    font-size:12px;
-    color:var(--text-faint);
-    margin-bottom:24px;
-    min-height:16px;
-  }
-  .status.err{color:#ff6b6b;}
+  .shell{ display:grid; grid-template-columns: 232px 1fr; min-height:100vh; }
+  @media (max-width: 860px){ .shell{ grid-template-columns: 1fr; } .sidebar{ display:none; } }
 
-  .list{list-style:none;margin:0;padding:0;}
-  .track{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    padding:14px 16px;
-    border-radius:10px;
-    cursor:pointer;
-    border:1px solid transparent;
-    transition:background .12s, border-color .12s;
+  .sidebar{
+    background: var(--bg);
+    border-right: 1px solid var(--line);
+    padding: 24px 18px;
+    display:flex; flex-direction:column; gap:28px;
+    position: sticky; top:0; height:100vh;
   }
-  .track:hover{background:var(--bg-hover); border-color:var(--line);}
-  .track.selected{background:var(--accent-dim); border-color:var(--accent);}
+  .brand{ display:flex; align-items:center; gap:10px; font-size:19px; font-weight:700; letter-spacing:-0.02em; padding: 0 4px;}
+  .brand .mark{
+    width:26px; height:26px; border-radius:7px; background: var(--accent-grad);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand .mark svg{ width:15px; height:15px; }
 
-  .track-main{flex:1; min-width:0;}
-  .track-name{
-    font-weight:500;
-    font-size:14.5px;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  .nav{ display:flex; flex-direction:column; gap:2px; }
+  .nav-item{
+    display:flex; align-items:center; gap:12px;
+    padding:10px 12px; border-radius:8px;
+    color: var(--muted); font-size:14px; font-weight:500;
+    background:transparent; width:100%; text-align:left;
+    transition: background .15s, color .15s;
   }
-  .track-artist{
-    font-size:13px;
-    color:var(--text-dim);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
-  .genre-tag{
-    font-family:'JetBrains Mono',monospace;
-    font-size:10.5px;
-    color:var(--text-faint);
-    border:1px solid var(--line);
-    padding:3px 8px;
-    border-radius:100px;
-    white-space:nowrap;
-  }
+  .nav-item svg{ width:17px; height:17px; opacity:.85; flex-shrink:0; }
+  .nav-item:hover{ background: var(--surface); color: var(--text); }
+  .nav-item.active{ background: var(--surface-2); color: var(--text); }
+  .nav-item.active svg{ opacity:1; }
 
-  .rec-item{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    padding:12px 16px;
-  }
-  .rec-rank{
-    font-family:'JetBrains Mono',monospace;
-    font-size:12px;
-    color:var(--text-faint);
-    width:20px;
-  }
-  .sim-track{flex:1; min-width:0;}
-  .simbar-wrap{
-    width:64px;
-    height:5px;
-    background:var(--line);
-    border-radius:3px;
-    overflow:hidden;
-    flex-shrink:0;
-  }
-  .simbar{
-    height:100%;
-    background:var(--accent);
-  }
-  .sim-pct{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px;
-    color:var(--text-faint);
-    width:38px;
-    text-align:right;
-    flex-shrink:0;
-  }
+  .sidebar-foot{ margin-top:auto; font-size:11.5px; color:#565b66; padding:0 4px; line-height:1.5; }
 
-  section{margin-top:36px;}
-  .section-label{
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px;
-    letter-spacing:0.08em;
-    text-transform:uppercase;
-    color:var(--text-faint);
-    margin-bottom:10px;
-    padding:0 4px;
+  .topbar{
+    display:flex; align-items:center; gap:16px;
+    padding: 16px 32px; position: sticky; top:0; z-index:20;
+    background: rgba(12,13,16,.86); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
   }
-  .empty{
-    color:var(--text-faint);
-    font-size:13.5px;
-    padding:20px 4px;
+  .search-wrap{ position:relative; flex:1; max-width:520px; }
+  .search-wrap input{
+    width:100%; background: var(--surface); border:1px solid var(--line);
+    color: var(--text); padding: 10px 14px 10px 38px; border-radius: 999px;
+    font-size:14px; outline:none; transition: border-color .15s;
   }
-  .method-toggle{
-    display:inline-flex;
-    border:1px solid var(--line);
-    border-radius:8px;
-    overflow:hidden;
-    margin-left:auto;
+  .search-wrap input:focus{ border-color:#454b58; }
+  .search-wrap svg{ position:absolute; left:13px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--muted); }
+  .search-results{
+    position:absolute; top:calc(100% + 8px); left:0; right:0;
+    background: var(--surface-2); border:1px solid var(--line); border-radius: var(--radius);
+    max-height:360px; overflow-y:auto; display:none; box-shadow: 0 14px 40px rgba(0,0,0,.5);
   }
-  .method-toggle button{
-    background:transparent;
-    color:var(--text-dim);
-    font-size:12px;
-    padding:6px 12px;
-    border-radius:0;
+  .search-results.open{ display:block; }
+  .sr-item{ display:flex; align-items:center; gap:12px; padding:10px 14px; transition:background .1s; }
+  .sr-item:hover{ background: var(--surface); cursor:pointer; }
+  .sr-thumb{ width:34px; height:34px; border-radius:6px; background:var(--accent-grad); flex-shrink:0; opacity:.85; }
+  .sr-meta .name{ font-size:13.5px; font-weight:500; }
+  .sr-meta .artist{ font-size:12px; color:var(--muted); }
+
+  .topbar-right{ margin-left:auto; display:flex; align-items:center; gap:10px; }
+  .btn{
+    padding: 9px 16px; border-radius: 999px; font-size:13.5px; font-weight:600;
+    transition: transform .12s, opacity .12s;
   }
-  .method-toggle button.active{
-    background:var(--accent-dim);
-    color:var(--accent);
+  .btn:active{ transform: scale(.96); }
+  .btn-ghost{ background:transparent; color:var(--text); border:1px solid var(--line); }
+  .btn-ghost:hover{ border-color:#454b58; }
+  .btn-solid{ background: var(--accent-grad); color:#181008; }
+  .btn-solid:hover{ opacity:.92; }
+  .user-chip{ display:flex; align-items:center; gap:9px; padding:6px 14px 6px 6px; border-radius:999px; background:var(--surface); border:1px solid var(--line); font-size:13.5px; font-weight:500; }
+  .user-chip .avatar{ width:26px; height:26px; border-radius:50%; background:var(--accent-grad); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#181008; }
+
+  main{ padding: 28px 32px 80px; max-width:1180px; }
+  .view{ display:none; animation: fadein .25s ease; }
+  .view.active{ display:block; }
+  @keyframes fadein{ from{ opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  .hero{
+    border-radius: 18px; padding: 34px 32px; margin-bottom:34px;
+    background: radial-gradient(120% 160% at 0% 0%, rgba(255,180,84,.16), transparent 60%), var(--surface);
+    border:1px solid var(--line); position:relative; overflow:hidden;
   }
-  .rec-header{display:flex; align-items:center;}
+  .hero .eyebrow{ color: var(--accent-1); font-size:12.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+  .hero h1{ font-size: 30px; font-weight:700; letter-spacing:-0.02em; margin:8px 0 10px; }
+  .hero p{ color:var(--muted); font-size:14.5px; max-width:520px; line-height:1.55; }
+  .hero-wave{ display:flex; align-items:flex-end; gap:3px; height:34px; margin-top:20px; }
+  .hero-wave span{ width:3px; border-radius:2px; background: var(--accent-grad); opacity:.8; animation: wave 1.4s ease-in-out infinite; }
+
+  @keyframes wave{ 0%,100%{ transform:scaleY(.35);} 50%{ transform:scaleY(1);} }
+
+  section.rail{ margin-bottom: 36px; }
+  .rail-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
+  .rail-head h2{ font-size:17px; font-weight:600; letter-spacing:-0.01em; }
+  .rail-head .sub{ font-size:12.5px; color:var(--muted); }
+
+  .card-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap:16px; }
+  .card{
+    background: var(--surface); border:1px solid var(--line); border-radius: var(--radius);
+    padding:14px; cursor:pointer; transition: transform .15s, border-color .15s, background .15s;
+  }
+  .card:hover{ transform: translateY(-3px); border-color:#3a4050; background:var(--surface-2); }
+  .cover{
+    width:100%; aspect-ratio:1; border-radius:8px; margin-bottom:12px;
+    background: linear-gradient(135deg, hsl(var(--h,30) 70% 55%), hsl(var(--h2,10) 65% 45%));
+    display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
+  }
+  .cover svg{ width:26px; height:26px; opacity:.55; }
+  .card .name{ font-size:13.5px; font-weight:600; line-height:1.3; margin-bottom:3px;
+    display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .card .artist{ font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .card .pop{ margin-top:8px; height:3px; background:var(--line); border-radius:2px; overflow:hidden; }
+  .card .pop i{ display:block; height:100%; background:var(--accent-grad); }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:9px; }
+  .chip{
+    padding:8px 16px; border-radius:999px; background:var(--surface); border:1px solid var(--line);
+    font-size:13px; font-weight:500; color:var(--text); transition: border-color .15s, background .15s;
+  }
+  .chip:hover{ border-color: var(--accent-2); }
+  .chip.active{ background: var(--accent-grad); color:#181008; border-color:transparent; font-weight:600; }
+
+  .seed-card{
+    display:flex; align-items:center; gap:16px; padding:18px 20px; border-radius:var(--radius);
+    background:var(--surface); border:1px solid var(--line); margin-bottom:22px;
+  }
+  .seed-cover{ width:56px; height:56px; border-radius:10px; background:var(--accent-grad); flex-shrink:0; }
+  .seed-meta .label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent-1); font-weight:600; margin-bottom:3px;}
+  .seed-meta .name{ font-size:17px; font-weight:700; }
+  .seed-meta .artist{ font-size:13px; color:var(--muted); margin-top:2px; }
+
+  .rec-list{ display:flex; flex-direction:column; gap:2px; }
+  .rec-row{
+    display:grid; grid-template-columns: 28px 1fr auto 120px; align-items:center; gap:16px;
+    padding: 12px 14px; border-radius:8px; cursor:pointer; transition: background .12s;
+  }
+  .rec-row:hover{ background: var(--surface); }
+  .rec-idx{ color:var(--muted); font-size:12.5px; }
+  .rec-info .name{ font-size:14px; font-weight:600; }
+  .rec-info .artist{ font-size:12px; color:var(--muted); margin-top:1px; }
+  .rec-genre{ font-size:11.5px; color:var(--muted); background:var(--surface-2); padding:4px 10px; border-radius:999px; white-space:nowrap; }
+  .rec-sim{ display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+  .rec-sim .bars{ display:flex; align-items:flex-end; gap:2px; height:16px; }
+  .rec-sim .bars span{ width:3px; border-radius:1px; background: var(--accent-grad); }
+  .rec-sim .pct{ font-size:12px; color:var(--muted); width:38px; text-align:right; }
+
+  .empty, .loading{ color:var(--muted); font-size:13.5px; padding: 30px 4px; }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(8,9,11,.72); backdrop-filter: blur(3px);
+    display:none; align-items:center; justify-content:center; z-index:100;
+  }
+  .overlay.open{ display:flex; }
+  .modal{
+    background: var(--surface-2); border:1px solid var(--line); border-radius:16px;
+    width:100%; max-width:380px; padding:30px 28px; position:relative;
+  }
+  .modal-close{ position:absolute; top:16px; right:16px; color:var(--muted); background:none; font-size:20px; line-height:1; padding:4px; }
+  .modal h2{ font-size:21px; margin-bottom:6px; }
+  .modal .hint{ color:var(--muted); font-size:13px; margin-bottom:22px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px; }
+  .field input{
+    width:100%; background: var(--bg); border:1px solid var(--line); color:var(--text);
+    padding:10px 12px; border-radius:8px; font-size:14px; outline:none;
+  }
+  .field input:focus{ border-color: var(--accent-2); }
+  .modal .btn-solid{ width:100%; padding:11px; margin-top:6px; font-size:14px; }
+  .modal-switch{ text-align:center; font-size:12.5px; color:var(--muted); margin-top:16px; }
+  .modal-switch button{ background:none; color:var(--accent-1); font-weight:600; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:#2a2e37; border-radius:4px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="eyebrow">Content-based · cosine similarity + MMR</div>
-    <h1>Find something similar.</h1>
-    <div class="sub">Search the catalog, pick a track, and see what sits nearest to it in audio-feature space.</div>
-  </header>
 
-  <div class="search-row">
-    <input type="text" id="searchInput" placeholder="Search by track or artist&hellip;" autocomplete="off">
-    <button id="searchBtn">Search</button>
-  </div>
-  <div class="status" id="status"></div>
-
-  <section>
-    <div class="section-label">Results</div>
-    <ul class="list" id="resultsList"><li class="empty">Search for a song to get started.</li></ul>
-  </section>
-
-  <section id="recSection" style="display:none;">
-    <div class="section-label rec-header">
-      <span id="recFor"></span>
-      <span class="method-toggle">
-        <button id="btnMmr" class="active">MMR (diverse)</button>
-        <button id="btnBaseline">Top-N</button>
-      </span>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 14L4 10M9 18L9 6M14 15L14 9M19 12L19 12" stroke="#15171c" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+      Wavelength
     </div>
-    <ul class="list" id="recList"></ul>
-  </section>
+    <nav class="nav">
+      <button class="nav-item active" data-view="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>
+        Home
+      </button>
+      <button class="nav-item" data-view="genres">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Genres
+      </button>
+      <button class="nav-item" data-view="moods">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+        Moods
+      </button>
+      <button class="nav-item" data-view="recommend" id="nav-recommend" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h4l2-8 4 16 2-8h4"/></svg>
+        Similar songs
+      </button>
+    </nav>
+    <div class="sidebar-foot">Content-based recommender<br>trained on 89.5k tracks · 128 audio features</div>
+  </aside>
+
+  <div>
+    <header class="topbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="search-input" type="text" placeholder="Search any song or artist…" autocomplete="off">
+        <div class="search-results" id="search-results"></div>
+      </div>
+      <div class="topbar-right" id="auth-area">
+        <button class="btn btn-ghost" id="btn-login">Log in</button>
+        <button class="btn btn-solid" id="btn-signup">Sign up</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="view active" id="view-home">
+        <div class="hero">
+          <div class="eyebrow">Content-based recommendation engine</div>
+          <h1 id="hero-greeting">Find your next favorite track</h1>
+          <p>Search a song you like, and the model matches it against 89,512 tracks using cosine similarity over 128 audio features — tempo, energy, valence, timbre — then re-ranks with MMR so you don't just get 10 versions of the same song.</p>
+          <div class="hero-wave" id="hero-wave"></div>
+        </div>
+
+        <section class="rail">
+          <div class="rail-head">
+            <h2>Popular right now</h2>
+            <span class="sub">by listener popularity</span>
+          </div>
+          <div class="card-grid" id="popular-grid"><div class="loading">Loading…</div></div>
+        </section>
+
+        <section class="rail">
+          <div class="rail-head">
+            <h2>Browse by mood</h2>
+            <span class="sub">computed from valence & energy</span>
+          </div>
+          <div class="chip-row" id="home-mood-chips"></div>
+        </section>
+      </div>
+
+      <div class="view" id="view-genres">
+        <h1 style="font-size:24px; margin-bottom:4px;">Genres</h1>
+        <p style="color:var(--muted); font-size:13.5px; margin-bottom:22px;">113 genres in the catalog. Pick one to see its most popular tracks.</p>
+        <div class="chip-row" id="genre-chips"></div>
+        <section class="rail" style="margin-top:28px;">
+          <div class="rail-head"><h2 id="genre-result-label">&nbsp;</h2></div>
+          <div class="card-grid" id="genre-grid"></div>
+        </section>
+      </div>
+
+      <div class="view" id="view-moods">
+        <h1 style="font-size:24px; margin-bottom:4px;">Moods</h1>
+        <p style="color:var(--muted); font-size:13.5px; margin-bottom:22px;">Each mood is a rule over real audio features (valence, energy, acousticness, instrumentalness) — not a tag someone typed in.</p>
+        <div class="chip-row" id="mood-chips"></div>
+        <section class="rail" style="margin-top:28px;">
+          <div class="rail-head"><h2 id="mood-result-label">&nbsp;</h2></div>
+          <div class="card-grid" id="mood-grid"></div>
+        </section>
+      </div>
+
+      <div class="view" id="view-recommend">
+        <div class="seed-card" id="seed-card"></div>
+        <div class="rail-head">
+          <h2>Similar songs</h2>
+          <span class="sub">MMR re-ranked for diversity</span>
+        </div>
+        <div class="rec-list" id="rec-list"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="overlay" id="auth-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">&times;</button>
+    <h2 id="modal-title">Welcome back</h2>
+    <p class="hint" id="modal-hint">Log in to save favorites and pick up where you left off.</p>
+    <div class="field" id="name-field" style="display:none;">
+      <label>Name</label>
+      <input type="text" id="input-name" placeholder="Your name">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="input-email" placeholder="you@example.com">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="input-password" placeholder="••••••••">
+    </div>
+    <button class="btn btn-solid" id="modal-submit">Log in</button>
+    <div class="modal-switch">
+      <span id="modal-switch-text">Don't have an account?</span>
+      <button id="modal-switch-btn">Sign up</button>
+    </div>
+  </div>
 </div>
 
 <script>
-// Point this at your running FastAPI backend (uvicorn app.main:app --reload)
-const API_BASE = "http://localhost:8000";
+const API = "/api";
 
-const searchInput = document.getElementById('searchInput');
-const searchBtn = document.getElementById('searchBtn');
-const statusEl = document.getElementById('status');
-const resultsList = document.getElementById('resultsList');
-const recSection = document.getElementById('recSection');
-const recList = document.getElementById('recList');
-const recFor = document.getElementById('recFor');
-const btnMmr = document.getElementById('btnMmr');
-const btnBaseline = document.getElementById('btnBaseline');
-
-let selectedTrackId = null;
-let currentMethod = 'mmr';
-
-function setStatus(msg, isErr=false){
-  statusEl.textContent = msg;
-  statusEl.className = 'status' + (isErr ? ' err' : '');
+function trackHue(seed){
+  let h = 0; for(const c of seed) h = (h*31 + c.charCodeAt(0)) % 360;
+  return h;
+}
+function coverStyle(id){
+  const h = trackHue(id||"x");
+  return `--h:${h}; --h2:${(h+40)%360};`;
+}
+function noteIcon(){
+  return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3" fill="#0c0d10" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="16" r="3" fill="#0c0d10" stroke="currentColor" stroke-width="1.5"/></svg>`;
+}
+function songCard(s){
+  return `<div class="card" data-id="${s.track_id}">
+    <div class="cover" style="${coverStyle(s.track_id)}">${noteIcon()}</div>
+    <div class="name">${s.track_name}</div>
+    <div class="artist">${s.artists}</div>
+    <div class="pop"><i style="width:${s.popularity}%"></i></div>
+  </div>`;
+}
+function bars(sim){
+  let out = "";
+  for(let i=0;i<8;i++){
+    const h = Math.max(3, Math.round((sim*16) * (0.5 + 0.5*Math.abs(Math.sin(i*1.7)))));
+    out += `<span style="height:${h}px"></span>`;
+  }
+  return out;
 }
 
-async function runSearch(){
+async function get(path){
+  const r = await fetch(API + path);
+  if(!r.ok) throw new Error((await r.json()).detail || r.statusText);
+  return r.json();
+}
+
+const views = document.querySelectorAll(".view");
+const navItems = document.querySelectorAll(".nav-item");
+function showView(name){
+  views.forEach(v => v.classList.toggle("active", v.id === "view-" + name));
+  navItems.forEach(n => n.classList.toggle("active", n.dataset.view === name));
+}
+navItems.forEach(n => n.addEventListener("click", () => showView(n.dataset.view)));
+
+const waveEl = document.getElementById("hero-wave");
+for(let i=0;i<28;i++){
+  const s = document.createElement("span");
+  const h = 10 + Math.round(24*Math.abs(Math.sin(i*0.6)));
+  s.style.height = h + "px";
+  s.style.animationDelay = (i*0.05) + "s";
+  waveEl.appendChild(s);
+}
+
+function setGreeting(){
+  const hr = new Date().getHours();
+  const g = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
+  const name = currentUser ? `, ${currentUser.name.split(" ")[0]}` : "";
+  document.getElementById("hero-greeting").textContent = `${g}${name}. Find your next favorite track`;
+}
+
+async function loadPopular(){
+  const el = document.getElementById("popular-grid");
+  try{
+    const data = await get("/popular?limit=12");
+    el.innerHTML = data.results.map(songCard).join("");
+  }catch(e){ el.innerHTML = `<div class="empty">Couldn't load popular tracks: ${e.message}</div>`; }
+}
+
+let MOODS = [];
+async function loadMoods(){
+  MOODS = (await get("/moods")).moods;
+  const homeChips = document.getElementById("home-mood-chips");
+  homeChips.innerHTML = MOODS.map(m => `<button class="chip" data-mood="${m}">${cap(m)}</button>`).join("");
+  homeChips.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+    showView("moods");
+    selectMood(c.dataset.mood);
+  }));
+
+  const moodChips = document.getElementById("mood-chips");
+  moodChips.innerHTML = MOODS.map(m => `<button class="chip" data-mood="${m}">${cap(m)}</button>`).join("");
+  moodChips.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => selectMood(c.dataset.mood)));
+}
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
+async function selectMood(mood){
+  document.querySelectorAll("#mood-chips .chip").forEach(c => c.classList.toggle("active", c.dataset.mood === mood));
+  const grid = document.getElementById("mood-grid");
+  const label = document.getElementById("mood-result-label");
+  label.textContent = cap(mood);
+  grid.innerHTML = `<div class="loading">Loading…</div>`;
+  try{
+    const data = await get(`/mood/${mood}?limit=18`);
+    grid.innerHTML = data.results.length ? data.results.map(songCard).join("") : `<div class="empty">No tracks matched this mood.</div>`;
+  }catch(e){ grid.innerHTML = `<div class="empty">${e.message}</div>`; }
+}
+
+async function loadGenres(){
+  const data = await get("/genres");
+  const chips = document.getElementById("genre-chips");
+  chips.innerHTML = data.genres.map(g => `<button class="chip" data-genre="${g}">${cap(g)}</button>`).join("");
+  chips.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => selectGenre(c.dataset.genre)));
+}
+async function selectGenre(genre){
+  document.querySelectorAll("#genre-chips .chip").forEach(c => c.classList.toggle("active", c.dataset.genre === genre));
+  const grid = document.getElementById("genre-grid");
+  const label = document.getElementById("genre-result-label");
+  label.textContent = cap(genre);
+  grid.innerHTML = `<div class="loading">Loading…</div>`;
+  try{
+    const data = await get(`/genre/${encodeURIComponent(genre)}?limit=18`);
+    grid.innerHTML = data.results.length ? data.results.map(songCard).join("") : `<div class="empty">No tracks in this genre.</div>`;
+  }catch(e){ grid.innerHTML = `<div class="empty">${e.message}</div>`; }
+}
+
+const searchInput = document.getElementById("search-input");
+const searchResults = document.getElementById("search-results");
+let searchTimer;
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimer);
   const q = searchInput.value.trim();
-  if(!q){ setStatus('Type something to search.'); return; }
-  setStatus('Searching…');
-  searchBtn.disabled = true;
-  try{
-    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}&limit=25`);
-    if(!res.ok) throw new Error(`API returned ${res.status}`);
-    const data = await res.json();
-    renderResults(data.results);
-    setStatus(`${data.results.length} result${data.results.length===1?'':'s'}`);
-  }catch(err){
-    setStatus(`Couldn't reach the API at ${API_BASE} — is uvicorn running? (${err.message})`, true);
-    resultsList.innerHTML = '';
-  }finally{
-    searchBtn.disabled = false;
-  }
-}
-
-function renderResults(results){
-  resultsList.innerHTML = '';
-  if(results.length === 0){
-    resultsList.innerHTML = '<li class="empty">No matches. Try a different name or artist.</li>';
-    return;
-  }
-  results.forEach(track => {
-    const li = document.createElement('li');
-    li.className = 'track';
-    li.dataset.trackId = track.track_id;
-    li.innerHTML = `
-      <div class="track-main">
-        <div class="track-name">${escapeHtml(track.track_name)}</div>
-        <div class="track-artist">${escapeHtml(track.artists)}</div>
-      </div>
-      <span class="genre-tag">${escapeHtml(track.track_genre)}</span>
-    `;
-    li.addEventListener('click', () => selectTrack(track));
-    resultsList.appendChild(li);
-  });
-}
-
-async function selectTrack(track){
-  selectedTrackId = track.track_id;
-  document.querySelectorAll('.track').forEach(el => {
-    el.classList.toggle('selected', el.dataset.trackId === track.track_id);
-  });
-  recFor.textContent = `Similar to “${track.track_name}”`;
-  recSection.style.display = 'block';
-  await loadRecommendations();
-}
-
-async function loadRecommendations(){
-  if(!selectedTrackId) return;
-  recList.innerHTML = '<li class="empty">Loading…</li>';
-  try{
-    const res = await fetch(`${API_BASE}/recommend/${encodeURIComponent(selectedTrackId)}?n=10&method=${currentMethod}`);
-    if(!res.ok) throw new Error(`API returned ${res.status}`);
-    const data = await res.json();
-    renderRecs(data.recommendations);
-  }catch(err){
-    recList.innerHTML = `<li class="empty">Couldn't load recommendations (${escapeHtml(err.message)}).</li>`;
-  }
-}
-
-function renderRecs(recs){
-  recList.innerHTML = '';
-  recs.forEach((r, i) => {
-    const pct = Math.round(r.similarity * 100);
-    const li = document.createElement('li');
-    li.className = 'rec-item';
-    li.innerHTML = `
-      <span class="rec-rank">${String(i+1).padStart(2,'0')}</span>
-      <div class="sim-track">
-        <div class="track-name">${escapeHtml(r.track_name)}</div>
-        <div class="track-artist">${escapeHtml(r.artists)} · ${escapeHtml(r.track_genre)}</div>
-      </div>
-      <div class="simbar-wrap"><div class="simbar" style="width:${pct}%"></div></div>
-      <div class="sim-pct">${pct}%</div>
-    `;
-    recList.appendChild(li);
-  });
-}
-
-function escapeHtml(s){
-  const d = document.createElement('div');
-  d.textContent = s ?? '';
-  return d.innerHTML;
-}
-
-searchBtn.addEventListener('click', runSearch);
-searchInput.addEventListener('keydown', e => { if(e.key === 'Enter') runSearch(); });
-
-btnMmr.addEventListener('click', () => {
-  currentMethod = 'mmr';
-  btnMmr.classList.add('active');
-  btnBaseline.classList.remove('active');
-  loadRecommendations();
+  if(!q){ searchResults.classList.remove("open"); return; }
+  searchTimer = setTimeout(async () => {
+    try{
+      const data = await get(`/search?q=${encodeURIComponent(q)}&limit=8`);
+      if(!data.results.length){
+        searchResults.innerHTML = `<div class="sr-item" style="color:var(--muted)">No matches for "${q}"</div>`;
+      } else {
+        searchResults.innerHTML = data.results.map(s => `
+          <div class="sr-item" data-id="${s.track_id}">
+            <div class="sr-thumb"></div>
+            <div class="sr-meta"><div class="name">${s.track_name}</div><div class="artist">${s.artists}</div></div>
+          </div>`).join("");
+      }
+      searchResults.classList.add("open");
+      searchResults.querySelectorAll(".sr-item[data-id]").forEach(item => {
+        item.addEventListener("click", () => {
+          searchResults.classList.remove("open");
+          searchInput.value = "";
+          loadRecommendations(item.dataset.id);
+        });
+      });
+    }catch(e){ searchResults.innerHTML = `<div class="sr-item">${e.message}</div>`; searchResults.classList.add("open"); }
+  }, 250);
 });
-btnBaseline.addEventListener('click', () => {
-  currentMethod = 'baseline';
-  btnBaseline.classList.add('active');
-  btnMmr.classList.remove('active');
-  loadRecommendations();
+document.addEventListener("click", (e) => {
+  if(!e.target.closest(".search-wrap")) searchResults.classList.remove("open");
 });
+
+document.addEventListener("click", (e) => {
+  const card = e.target.closest(".card[data-id]");
+  if(card) loadRecommendations(card.dataset.id);
+});
+
+async function loadRecommendations(trackId){
+  document.getElementById("nav-recommend").style.display = "flex";
+  showView("recommend");
+  const seedEl = document.getElementById("seed-card");
+  const listEl = document.getElementById("rec-list");
+  seedEl.innerHTML = `<div class="loading">Loading track…</div>`;
+  listEl.innerHTML = "";
+  try{
+    const data = await get(`/recommend/${trackId}?n=12&method=mmr`);
+    seedEl.innerHTML = `
+      <div class="seed-cover" style="${coverStyle(data.seed.track_id)}"></div>
+      <div class="seed-meta">
+        <div class="label">Recommending based on</div>
+        <div class="name">${data.seed.track_name}</div>
+        <div class="artist">${data.seed.artists} · ${cap(data.seed.track_genre)}</div>
+      </div>`;
+    listEl.innerHTML = data.recommendations.map((r, i) => `
+      <div class="rec-row" data-id="${r.track_id}">
+        <div class="rec-idx mono">${String(i+1).padStart(2,"0")}</div>
+        <div class="rec-info">
+          <div class="name">${r.track_name}</div>
+          <div class="artist">${r.artists}</div>
+        </div>
+        <div class="rec-genre">${cap(r.track_genre)}</div>
+        <div class="rec-sim">
+          <div class="bars">${bars(r.similarity)}</div>
+          <div class="pct mono">${Math.round(r.similarity*100)}%</div>
+        </div>
+      </div>`).join("");
+  }catch(e){
+    seedEl.innerHTML = `<div class="empty">Couldn't load recommendations: ${e.message}</div>`;
+  }
+}
+
+let currentUser = JSON.parse(localStorage.getItem("wl_user") || "null");
+let authMode = "login";
+const overlay = document.getElementById("auth-overlay");
+const nameField = document.getElementById("name-field");
+const modalTitle = document.getElementById("modal-title");
+const modalHint = document.getElementById("modal-hint");
+const modalSubmit = document.getElementById("modal-submit");
+const switchText = document.getElementById("modal-switch-text");
+const switchBtn = document.getElementById("modal-switch-btn");
+
+function openModal(mode){
+  authMode = mode;
+  const isSignup = mode === "signup";
+  nameField.style.display = isSignup ? "block" : "none";
+  modalTitle.textContent = isSignup ? "Create your account" : "Welcome back";
+  modalHint.textContent = isSignup ? "Sign up to save favorites and track your listening." : "Log in to save favorites and pick up where you left off.";
+  modalSubmit.textContent = isSignup ? "Sign up" : "Log in";
+  switchText.textContent = isSignup ? "Already have an account?" : "Don't have an account?";
+  switchBtn.textContent = isSignup ? "Log in" : "Sign up";
+  overlay.classList.add("open");
+}
+document.getElementById("modal-close").addEventListener("click", () => overlay.classList.remove("open"));
+overlay.addEventListener("click", (e) => { if(e.target === overlay) overlay.classList.remove("open"); });
+switchBtn.addEventListener("click", () => openModal(authMode === "login" ? "signup" : "login"));
+
+modalSubmit.addEventListener("click", () => {
+  const email = document.getElementById("input-email").value.trim();
+  const pass = document.getElementById("input-password").value;
+  if(!email || !pass) return;
+  let name = document.getElementById("input-name").value.trim();
+  if(authMode === "login") name = email.split("@")[0];
+  if(!name) name = email.split("@")[0];
+  currentUser = { name, email };
+  localStorage.setItem("wl_user", JSON.stringify(currentUser));
+  overlay.classList.remove("open");
+  renderAuthArea();
+  setGreeting();
+});
+
+function renderAuthArea(){
+  const area = document.getElementById("auth-area");
+  if(currentUser){
+    const initial = currentUser.name.charAt(0).toUpperCase();
+    area.innerHTML = `
+      <div class="user-chip">
+        <span class="avatar">${initial}</span>
+        ${currentUser.name}
+      </div>
+      <button class="btn btn-ghost" id="btn-logout">Log out</button>`;
+    document.getElementById("btn-logout").addEventListener("click", () => {
+      currentUser = null;
+      localStorage.removeItem("wl_user");
+      renderAuthArea();
+      setGreeting();
+    });
+  } else {
+    area.innerHTML = `
+      <button class="btn btn-ghost" id="btn-login">Log in</button>
+      <button class="btn btn-solid" id="btn-signup">Sign up</button>`;
+    document.getElementById("btn-login").addEventListener("click", () => openModal("login"));
+    document.getElementById("btn-signup").addEventListener("click", () => openModal("signup"));
+  }
+}
+
+renderAuthArea();
+setGreeting();
+loadPopular();
+loadMoods();
+loadGenres();
 </script>
 </body>
 </html>
