@@ -142,6 +142,9 @@
     display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
   }
   .cover svg{ width:26px; height:26px; opacity:.55; }
+  .cover img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:inherit; }
+  .seed-cover, .sr-thumb{ position:relative; overflow:hidden; }
+  .seed-cover img, .sr-thumb img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:inherit; }
   .card .name{ font-size:13.5px; font-weight:600; line-height:1.3; margin-bottom:3px;
     display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .card .artist{ font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -179,6 +182,26 @@
   .rec-sim .bars{ display:flex; align-items:flex-end; gap:2px; height:16px; }
   .rec-sim .bars span{ width:3px; border-radius:1px; background: var(--accent-grad); }
   .rec-sim .pct{ font-size:12px; color:var(--muted); width:38px; text-align:right; }
+
+  /* ---- Running unicorn loading state ---- */
+  .loading-unicorn{ display:flex; flex-direction:column; align-items:center; gap:10px; padding:36px 4px; color:var(--muted); }
+  .uni-scene{ position:relative; width:120px; height:70px; overflow:hidden; }
+  .uni-trail{
+    position:absolute; left:0; right:0; bottom:14px; height:2px;
+    background: repeating-linear-gradient(90deg, var(--line) 0 9px, transparent 9px 20px);
+    animation: uni-trail-move .5s linear infinite;
+  }
+  @keyframes uni-trail-move{ from{ transform:translateX(0);} to{ transform:translateX(-20px);} }
+  .uni-svg{ position:relative; width:96px; height:70px; animation: uni-bob .42s ease-in-out infinite; }
+  @keyframes uni-bob{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-5px);} }
+  .uni-leg{ transform-box: fill-box; transform-origin: 50% 0%; }
+  @keyframes uni-gallop-a{ 0%,100%{ transform:rotate(-26deg);} 50%{ transform:rotate(26deg);} }
+  @keyframes uni-gallop-b{ 0%,100%{ transform:rotate(26deg);} 50%{ transform:rotate(-26deg);} }
+  .uni-leg-1, .uni-leg-4{ animation: uni-gallop-a .42s ease-in-out infinite; }
+  .uni-leg-2, .uni-leg-3{ animation: uni-gallop-b .42s ease-in-out infinite; }
+  .uni-tail{ transform-box: fill-box; transform-origin: 100% 30%; animation: uni-tail-wag .42s ease-in-out infinite; }
+  @keyframes uni-tail-wag{ 0%,100%{ transform:rotate(-8deg);} 50%{ transform:rotate(10deg);} }
+  .uni-label{ font-size:12.5px; }
 
   .empty, .loading{ color:var(--muted); font-size:13.5px; padding: 30px 4px; }
 
@@ -307,7 +330,7 @@
             <h2>Popular right now</h2>
             <span class="sub">by listener popularity</span>
           </div>
-          <div class="card-grid" id="popular-grid"><div class="loading">Loading…</div></div>
+          <div class="card-grid" id="popular-grid"></div>
         </section>
 
         <section class="rail">
@@ -390,9 +413,12 @@ function coverStyle(id){
 function noteIcon(){
   return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3" fill="#0c0d10" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="16" r="3" fill="#0c0d10" stroke="currentColor" stroke-width="1.5"/></svg>`;
 }
+function coverImg(id){
+  return `<img src="${API}/cover/${encodeURIComponent(id)}" alt="" loading="lazy" onerror="this.remove()">`;
+}
 function songCard(s){
   return `<div class="card" data-id="${s.track_id}">
-    <div class="cover" style="${coverStyle(s.track_id)}">${noteIcon()}</div>
+    <div class="cover" style="${coverStyle(s.track_id)}">${noteIcon()}${coverImg(s.track_id)}</div>
     <div class="name">${s.track_name}</div>
     <div class="artist">${s.artists}</div>
     <div class="pop"><i style="width:${s.popularity}%"></i></div>
@@ -439,6 +465,7 @@ function setGreeting(){
 
 async function loadPopular(){
   const el = document.getElementById("popular-grid");
+  el.innerHTML = loadingUnicorn("Warming up the turntables…");
   try{
     const data = await get("/popular?limit=12");
     el.innerHTML = data.results.map(songCard).join("");
@@ -461,12 +488,39 @@ async function loadMoods(){
 }
 function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 
+function loadingUnicorn(label){
+  return `
+    <div class="loading-unicorn">
+      <div class="uni-scene">
+        <div class="uni-trail"></div>
+        <svg class="uni-svg" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="uniAccent" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--accent-1)"/>
+              <stop offset="100%" stop-color="var(--accent-2)"/>
+            </linearGradient>
+          </defs>
+          <path class="uni-tail" d="M20 54 C11 51 5 58 7 68 C12 63 17 61 22 63 Z" fill="url(#uniAccent)"/>
+          <g class="uni-leg uni-leg-1"><rect x="30" y="62" width="4.5" height="20" rx="2.2" fill="var(--text)"/></g>
+          <g class="uni-leg uni-leg-2"><rect x="41" y="62" width="4.5" height="20" rx="2.2" fill="var(--text)"/></g>
+          <g class="uni-leg uni-leg-3"><rect x="60" y="62" width="4.5" height="20" rx="2.2" fill="var(--text)"/></g>
+          <g class="uni-leg uni-leg-4"><rect x="71" y="62" width="4.5" height="20" rx="2.2" fill="var(--text)"/></g>
+          <path d="M18 54 C17 39 29 29 45 31 L65 17 L72 24 L60 35 C73 35 84 45 84 55 L84 63 C84 67 80 69 76 69 L27 69 C21 69 18 63 18 57 Z" fill="var(--text)"/>
+          <path d="M46 29 C51 22 58 20 63 25 C58 27 55 31 57 36 C50 34 45 34 43 39 Z" fill="url(#uniAccent)"/>
+          <path d="M65 17 L70 3 L73 19 Z" fill="url(#uniAccent)"/>
+          <circle cx="68" cy="32" r="1.8" fill="var(--bg)"/>
+        </svg>
+      </div>
+      <div class="uni-label mono">${label || "Loading…"}</div>
+    </div>`;
+}
+
 async function selectMood(mood){
   document.querySelectorAll("#mood-chips .chip").forEach(c => c.classList.toggle("active", c.dataset.mood === mood));
   const grid = document.getElementById("mood-grid");
   const label = document.getElementById("mood-result-label");
   label.textContent = cap(mood);
-  grid.innerHTML = `<div class="loading">Loading…</div>`;
+  grid.innerHTML = loadingUnicorn("Finding the vibe…");
   try{
     const data = await get(`/mood/${mood}?limit=18`);
     grid.innerHTML = data.results.length ? data.results.map(songCard).join("") : `<div class="empty">No tracks matched this mood.</div>`;
@@ -484,7 +538,7 @@ async function selectGenre(genre){
   const grid = document.getElementById("genre-grid");
   const label = document.getElementById("genre-result-label");
   label.textContent = cap(genre);
-  grid.innerHTML = `<div class="loading">Loading…</div>`;
+  grid.innerHTML = loadingUnicorn("Digging through the crate…");
   try{
     const data = await get(`/genre/${encodeURIComponent(genre)}?limit=18`);
     grid.innerHTML = data.results.length ? data.results.map(songCard).join("") : `<div class="empty">No tracks in this genre.</div>`;
@@ -506,7 +560,7 @@ searchInput.addEventListener("input", () => {
       } else {
         searchResults.innerHTML = data.results.map(s => `
           <div class="sr-item" data-id="${s.track_id}">
-            <div class="sr-thumb"></div>
+            <div class="sr-thumb">${coverImg(s.track_id)}</div>
             <div class="sr-meta"><div class="name">${s.track_name}</div><div class="artist">${s.artists}</div></div>
           </div>`).join("");
       }
@@ -535,12 +589,12 @@ async function loadRecommendations(trackId){
   showView("recommend");
   const seedEl = document.getElementById("seed-card");
   const listEl = document.getElementById("rec-list");
-  seedEl.innerHTML = `<div class="loading">Loading track…</div>`;
+  seedEl.innerHTML = loadingUnicorn("Loading track…");
   listEl.innerHTML = "";
   try{
     const data = await get(`/recommend/${trackId}?n=12&method=mmr`);
     seedEl.innerHTML = `
-      <div class="seed-cover" style="${coverStyle(data.seed.track_id)}"></div>
+      <div class="seed-cover" style="${coverStyle(data.seed.track_id)}">${coverImg(data.seed.track_id)}</div>
       <div class="seed-meta">
         <div class="label">Recommending based on</div>
         <div class="name">${data.seed.track_name}</div>

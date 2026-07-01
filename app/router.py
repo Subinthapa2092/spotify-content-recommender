@@ -1,4 +1,6 @@
+import httpx
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import RedirectResponse
 
 from app.state import state
 from app.schemas import (
@@ -106,3 +108,37 @@ def by_mood(mood: str, limit: int = Query(20, ge=1, le=50)):
         raise HTTPException(status_code=404, detail=f"mood '{mood}' not recognized")
     rows = songs_by_mood(state.df_clean, mood, limit=limit)
     return SongListResponse(label=mood.title(), results=[_to_song_out(r) for _, r in rows.iterrows()])
+
+
+# In-memory cache: track_id -> cover image URL, or None if we've confirmed
+# there isn't one (avoids re-hitting Spotify for the same track repeatedly).
+_cover_cache: dict[str, str | None] = {}
+
+
+@router.get("/cover/{track_id}")
+async def cover(track_id: str):
+    """Redirect to the track's real album art, resolved via Spotify's public
+    oEmbed endpoint (no API key required). Frontend just does
+    <img src="/api/cover/{id}"> and handles the 404 fallback itself."""
+    if track_id in _cover_cache:
+        cached = _cover_cache[track_id]
+        if cached is None:
+            raise HTTPException(status_code=404, detail="no cover art available")
+        return RedirectResponse(cached)
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(
+                "https://open.spotify.com/oembed",
+                params={"url": f"spotify:track:{track_id}"},
+            )
+        resp.raise_for_status()
+        url = resp.json().get("thumbnail_url")
+        if not url:
+            raise ValueError("no thumbnail_url in oEmbed response")
+    except Exception:
+        _cover_cache[track_id] = None
+        raise HTTPException(status_code=404, detail="no cover art available")
+
+    _cover_cache[track_id] = url
+    return RedirectResponse(url)
