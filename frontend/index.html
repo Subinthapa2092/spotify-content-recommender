@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Similar &mdash; song recommender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121218;
+    --bg-raised:#1b1b24;
+    --bg-hover:#232330;
+    --line:#2c2c38;
+    --text:#eeeef2;
+    --text-dim:#9797a6;
+    --text-faint:#5c5c6b;
+    --accent:#ffb020;
+    --accent-dim:#4a3a1c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding:64px 24px 80px;
+  }
+  header{
+    margin-bottom:40px;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:40px;
+    font-weight:700;
+    line-height:1.1;
+    margin:0 0 12px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--text-dim);
+    font-size:15px;
+    max-width:46ch;
+    line-height:1.5;
+  }
+  .search-row{
+    display:flex;
+    gap:10px;
+    margin:36px 0 8px;
+  }
+  input[type=text]{
+    flex:1;
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    padding:14px 16px;
+    border-radius:10px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  input[type=text]:focus{border-color:var(--accent);}
+  button{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    background:var(--accent);
+    color:#1a1400;
+    border:none;
+    padding:0 22px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:filter .15s;
+  }
+  button:hover{filter:brightness(1.08);}
+  button:disabled{background:var(--line);color:var(--text-faint);cursor:default;}
+
+  .status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-faint);
+    margin-bottom:24px;
+    min-height:16px;
+  }
+  .status.err{color:#ff6b6b;}
+
+  .list{list-style:none;margin:0;padding:0;}
+  .track{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 16px;
+    border-radius:10px;
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:background .12s, border-color .12s;
+  }
+  .track:hover{background:var(--bg-hover); border-color:var(--line);}
+  .track.selected{background:var(--accent-dim); border-color:var(--accent);}
+
+  .track-main{flex:1; min-width:0;}
+  .track-name{
+    font-weight:500;
+    font-size:14.5px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .track-artist{
+    font-size:13px;
+    color:var(--text-dim);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .genre-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--text-faint);
+    border:1px solid var(--line);
+    padding:3px 8px;
+    border-radius:100px;
+    white-space:nowrap;
+  }
+
+  .rec-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:12px 16px;
+  }
+  .rec-rank{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-faint);
+    width:20px;
+  }
+  .sim-track{flex:1; min-width:0;}
+  .simbar-wrap{
+    width:64px;
+    height:5px;
+    background:var(--line);
+    border-radius:3px;
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .simbar{
+    height:100%;
+    background:var(--accent);
+  }
+  .sim-pct{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-faint);
+    width:38px;
+    text-align:right;
+    flex-shrink:0;
+  }
+
+  section{margin-top:36px;}
+  .section-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin-bottom:10px;
+    padding:0 4px;
+  }
+  .empty{
+    color:var(--text-faint);
+    font-size:13.5px;
+    padding:20px 4px;
+  }
+  .method-toggle{
+    display:inline-flex;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    margin-left:auto;
+  }
+  .method-toggle button{
+    background:transparent;
+    color:var(--text-dim);
+    font-size:12px;
+    padding:6px 12px;
+    border-radius:0;
+  }
+  .method-toggle button.active{
+    background:var(--accent-dim);
+    color:var(--accent);
+  }
+  .rec-header{display:flex; align-items:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Content-based · cosine similarity + MMR</div>
+    <h1>Find something similar.</h1>
+    <div class="sub">Search the catalog, pick a track, and see what sits nearest to it in audio-feature space.</div>
+  </header>
+
+  <div class="search-row">
+    <input type="text" id="searchInput" placeholder="Search by track or artist&hellip;" autocomplete="off">
+    <button id="searchBtn">Search</button>
+  </div>
+  <div class="status" id="status"></div>
+
+  <section>
+    <div class="section-label">Results</div>
+    <ul class="list" id="resultsList"><li class="empty">Search for a song to get started.</li></ul>
+  </section>
+
+  <section id="recSection" style="display:none;">
+    <div class="section-label rec-header">
+      <span id="recFor"></span>
+      <span class="method-toggle">
+        <button id="btnMmr" class="active">MMR (diverse)</button>
+        <button id="btnBaseline">Top-N</button>
+      </span>
+    </div>
+    <ul class="list" id="recList"></ul>
+  </section>
+</div>
+
+<script>
+// Point this at your running FastAPI backend (uvicorn app.main:app --reload)
+const API_BASE = "http://localhost:8000";
+
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+const statusEl = document.getElementById('status');
+const resultsList = document.getElementById('resultsList');
+const recSection = document.getElementById('recSection');
+const recList = document.getElementById('recList');
+const recFor = document.getElementById('recFor');
+const btnMmr = document.getElementById('btnMmr');
+const btnBaseline = document.getElementById('btnBaseline');
+
+let selectedTrackId = null;
+let currentMethod = 'mmr';
+
+function setStatus(msg, isErr=false){
+  statusEl.textContent = msg;
+  statusEl.className = 'status' + (isErr ? ' err' : '');
+}
+
+async function runSearch(){
+  const q = searchInput.value.trim();
+  if(!q){ setStatus('Type something to search.'); return; }
+  setStatus('Searching…');
+  searchBtn.disabled = true;
+  try{
+    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}&limit=25`);
+    if(!res.ok) throw new Error(`API returned ${res.status}`);
+    const data = await res.json();
+    renderResults(data.results);
+    setStatus(`${data.results.length} result${data.results.length===1?'':'s'}`);
+  }catch(err){
+    setStatus(`Couldn't reach the API at ${API_BASE} — is uvicorn running? (${err.message})`, true);
+    resultsList.innerHTML = '';
+  }finally{
+    searchBtn.disabled = false;
+  }
+}
+
+function renderResults(results){
+  resultsList.innerHTML = '';
+  if(results.length === 0){
+    resultsList.innerHTML = '<li class="empty">No matches. Try a different name or artist.</li>';
+    return;
+  }
+  results.forEach(track => {
+    const li = document.createElement('li');
+    li.className = 'track';
+    li.dataset.trackId = track.track_id;
+    li.innerHTML = `
+      <div class="track-main">
+        <div class="track-name">${escapeHtml(track.track_name)}</div>
+        <div class="track-artist">${escapeHtml(track.artists)}</div>
+      </div>
+      <span class="genre-tag">${escapeHtml(track.track_genre)}</span>
+    `;
+    li.addEventListener('click', () => selectTrack(track));
+    resultsList.appendChild(li);
+  });
+}
+
+async function selectTrack(track){
+  selectedTrackId = track.track_id;
+  document.querySelectorAll('.track').forEach(el => {
+    el.classList.toggle('selected', el.dataset.trackId === track.track_id);
+  });
+  recFor.textContent = `Similar to “${track.track_name}”`;
+  recSection.style.display = 'block';
+  await loadRecommendations();
+}
+
+async function loadRecommendations(){
+  if(!selectedTrackId) return;
+  recList.innerHTML = '<li class="empty">Loading…</li>';
+  try{
+    const res = await fetch(`${API_BASE}/recommend/${encodeURIComponent(selectedTrackId)}?n=10&method=${currentMethod}`);
+    if(!res.ok) throw new Error(`API returned ${res.status}`);
+    const data = await res.json();
+    renderRecs(data.recommendations);
+  }catch(err){
+    recList.innerHTML = `<li class="empty">Couldn't load recommendations (${escapeHtml(err.message)}).</li>`;
+  }
+}
+
+function renderRecs(recs){
+  recList.innerHTML = '';
+  recs.forEach((r, i) => {
+    const pct = Math.round(r.similarity * 100);
+    const li = document.createElement('li');
+    li.className = 'rec-item';
+    li.innerHTML = `
+      <span class="rec-rank">${String(i+1).padStart(2,'0')}</span>
+      <div class="sim-track">
+        <div class="track-name">${escapeHtml(r.track_name)}</div>
+        <div class="track-artist">${escapeHtml(r.artists)} · ${escapeHtml(r.track_genre)}</div>
+      </div>
+      <div class="simbar-wrap"><div class="simbar" style="width:${pct}%"></div></div>
+      <div class="sim-pct">${pct}%</div>
+    `;
+    recList.appendChild(li);
+  });
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s ?? '';
+  return d.innerHTML;
+}
+
+searchBtn.addEventListener('click', runSearch);
+searchInput.addEventListener('keydown', e => { if(e.key === 'Enter') runSearch(); });
+
+btnMmr.addEventListener('click', () => {
+  currentMethod = 'mmr';
+  btnMmr.classList.add('active');
+  btnBaseline.classList.remove('active');
+  loadRecommendations();
+});
+btnBaseline.addEventListener('click', () => {
+  currentMethod = 'baseline';
+  btnBaseline.classList.add('active');
+  btnMmr.classList.remove('active');
+  loadRecommendations();
+});
+</script>
+</body>
+</html>
