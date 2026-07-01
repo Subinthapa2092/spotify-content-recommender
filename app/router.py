@@ -5,7 +5,7 @@ from app.schemas import (
     SearchResponse, SongOut, RecommendResponse, RecommendationOut,
     GenresResponse, HealthResponse,
 )
-from src.recommender import RECOMMENDERS
+from src.recommender import RECOMMENDERS, search_songs
 
 router = APIRouter()
 
@@ -26,12 +26,7 @@ def health():
 @router.get("/search", response_model=SearchResponse)
 def search(q: str = Query(..., min_length=1, description="Track name or artist to search for"),
            limit: int = Query(20, ge=1, le=100)):
-    df = state.df_clean
-    mask = (
-        df["track_name"].str.lower().str.contains(q.lower(), na=False)
-        | df["artists"].str.lower().str.contains(q.lower(), na=False)
-    )
-    matches = df[mask].head(limit)
+    matches = search_songs(state.df_clean, q, limit=limit)
 
     results = [
         SongOut(

@@ -2,6 +2,10 @@
 Content-based recommender. Logic copied 1:1 from notebook section 5 & 5b
 (cosine similarity top-N, plus MMR diversity re-ranking).
 """
+"""
+Content-based recommender. Logic copied 1:1 from notebook section 5 & 5b
+(cosine similarity top-N, plus MMR diversity re-ranking).
+"""
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
@@ -76,3 +80,16 @@ RECOMMENDERS = {
     "baseline": recommend_songs,
     "mmr": recommend_songs_mmr,
 }
+
+
+def search_songs(df: pd.DataFrame, q: str, limit: int = 20) -> pd.DataFrame:
+    """Case-insensitive substring search over track name and artist. Used by the
+    /search endpoint, pulled out here so it's testable without running the API."""
+    if not q:
+        return df.iloc[0:0]
+    q_lower = q.lower()
+    mask = (
+        df["track_name"].str.lower().str.contains(q_lower, na=False)
+        | df["artists"].str.lower().str.contains(q_lower, na=False)
+    )
+    return df[mask].head(limit)
